@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,6 +21,8 @@ def sum_squares(theta, data):
 def main(argv=None):
     # Set up figure path:
     figure_path = os.path.join(os.path.dirname(__file__), 'figures')
+    path = pathlib.Path(figure_path)
+    path.mkdir(parents=True, exist_ok=True)
 
     # Generate data:
     ef = 5000e-6

@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 import numpy as np
 import scipy
@@ -23,6 +24,8 @@ def sum_squares(theta, data):
 def main(argv=None):
     # Set up figure path:
     figure_path = os.path.join(os.path.dirname(__file__), 'figures')
+    path = pathlib.Path(figure_path)
+    path.mkdir(parents=True, exist_ok=True)
 
     # Load mat file:
     filepath = os.path.join(os.path.dirname(__file__), 'data/stress_strain_randn.mat')
