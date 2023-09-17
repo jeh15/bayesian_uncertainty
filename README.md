@@ -20,4 +20,7 @@ pip install pymcmcstat
 pip install numpy
 pip install scipy
 pip install matplotlib
+pip install drake
+pip install osqp
+pip install --upgrade "jax[cpu]"
 ```
