@@ -57,9 +57,9 @@ def main(argv=None):
 
     # Set Initial Guess:
     # Informed Guess:
-    prog.SetInitialGuess(x, np.array([1.46, 0.49, 0.29, a[0], a[1], a[2]]))
+    # prog.SetInitialGuess(x, np.array([1.46, 0.49, 0.29, a[0], a[1], a[2]]))
     # Random Guess:
-    # prog.SetInitialGuess(x, np.random.rand(x.shape[0]))
+    prog.SetInitialGuess(x, np.random.rand(x.shape[0]))
 
     # Solve Optimization Problem:
     results = Solve(prog)

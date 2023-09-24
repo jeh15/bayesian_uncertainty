@@ -143,7 +143,7 @@ def main(argv=None):
     ax.plot(x_data, estimator_output, 'g-', linewidth=3)
     ax.set_xlabel('t')
     ax.set_ylabel('y')
-    ax.legend(['Data', 'Optimization', 'Estimator'], loc='upper left')
+    ax.legend(['Data', 'Quadratic Program', 'Linear Estimator'], loc='upper left')
     figure_name = os.path.join(figure_path, 'problem_2_comparison.png')
     fig.savefig(figure_name, dpi=300)
 
