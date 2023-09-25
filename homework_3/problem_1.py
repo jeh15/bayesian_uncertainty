@@ -23,15 +23,29 @@ def main(argv=None):
         dtype=np.float64,
     )
 
-    n = 10000
-    states = []
-    for i in range(n):
-        state = initial_distribution @ np.linalg.matrix_power(transition_matrix, i)
-        states.append(state)
+    # Test to see if distribution is stationary:
+    if np.allclose(distribution @ transition_matrix, distribution):
+        print(f"The distribution pi = {distribution} is a stationary distribution.")
+        print(r"As verified by pi = pi @ P")
 
-    states = np.asarray(states)
-    stable_distribution = np.mean(states, axis=0)
-    print(f"Steady state distribution of {n} samples: {stable_distribution}")
+    # Check for period of Markov Chain:
+    n = 10000
+    period = 3
+    distributions = []
+    for i in range(period, n, period):
+        distributions.append(
+            initial_distribution @ np.linalg.matrix_power(transition_matrix, i)
+        )
+
+    distributions = np.asarray(distributions)
+    mean_distribution = np.mean(distributions, axis=0)
+
+    # Check if Markov Chain has a period of k = 3:
+    condition = np.allclose(
+        mean_distribution * np.ones_like(distributions),
+        distributions,
+    )
+    print(f"The Markov Chain has a period of k = 3: {condition}")
 
 
 if __name__ == "__main__":
