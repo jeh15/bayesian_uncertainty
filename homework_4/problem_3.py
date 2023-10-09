@@ -24,7 +24,7 @@ def main(argv=None):
     q = jnp.array([1, 0.5, 10])
     z_0 = 1
     z_1 = 0
-    t = jnp.linspace(0, 1, 101)
+    t = jnp.linspace(0, 5, 101)
 
     model_fn = lambda m, c, k, t: model(m, c, k, t, z_0, z_1)
 
@@ -47,7 +47,7 @@ def main(argv=None):
     print(f'dz_dc: {dz_dc}')
     print(f'dz_dk: {dz_dk}')
 
-    X = jnp.vstack([dz_dm, dz_dc, dz_dk])
+    X = jnp.vstack([dz_dm, dz_dc, dz_dk]).T
 
     # Fisher Information Matrix:
     F = X.T @ X
@@ -55,18 +55,24 @@ def main(argv=None):
     _, R = np.linalg.qr(F)
     _, S_R, _ = np.linalg.svd(R)
     Q_r, R_r = random_range_finder(F, 101, type='uniform')
+    R_r = np.diag(R_r)
     B = Q_r.T @ F
     _, S_B, _ = np.linalg.svd(B)
 
     fig, ax = plt.subplots()
-    fig.tight_layout()
-    ax.plot(S, linestyle='none', label='Deterministic Algorithm', marker='*')
+    ax.plot(S, linestyle='none', label='SVD', marker='*')
     ax.plot(S_R, linestyle='none', label='QR Factorization', marker='.')
     ax.plot(S_B, linestyle='none', label='Random Range Finder', marker='o')
     ax.set_ylabel('Singular Values')
     ax.legend(loc='upper right')
 
-    figure_name = os.path.join(figure_path, 'problem_3.png')
+    figure_name = os.path.join(figure_path, 'problem_3_1.png')
+    fig.savefig(fname=figure_name, dpi=300)
+
+    fig, ax = plt.subplots()
+    ax.plot(R_r, linestyle='none', marker='.')
+    ax.set_ylabel('Diagonal Values of R from Random Range Finder')
+    figure_name = os.path.join(figure_path, 'problem_3_2.png')
     fig.savefig(fname=figure_name, dpi=300)
 
 
