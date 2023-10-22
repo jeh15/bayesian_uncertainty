@@ -84,7 +84,6 @@ def compute_initial_values(
     return q0
 
 
-
 def compute_sum_of_squares_q0(
     fun: Callable,
     data: tuple[jax.typing.ArrayLike, jax.typing.ArrayLike],
