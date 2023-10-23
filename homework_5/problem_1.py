@@ -1,3 +1,5 @@
+import os
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -12,6 +14,9 @@ def main(argv=None):
         area = q[0] * x ** 2
         return area
 
+    # Figure Path:
+    figure_path = os.path.join(os.path.dirname(__file__), 'figures')
+
     # Generate data:
     key = jax.random.PRNGKey(42)
     sample_size = 1000
@@ -20,7 +25,7 @@ def main(argv=None):
     actual_q = np.array([np.pi])
     y = []
     for i in range(x.shape[0]):
-        y.append(model_function(actual_q, data[i]))
+        y.append(model_function(actual_q, x[i]))
 
     _, key = jax.random.split(key)
     y = np.asarray(y) + scale * jax.random.normal(key, shape=(sample_size,))
@@ -68,6 +73,7 @@ def main(argv=None):
 
     # Plot Results:
     fig, ax = plt.subplots(2)
+    plt.subplots_adjust(hspace=0.5)
     ax[0].scatter(x, y)
     ax[0].scatter(x, model_response, marker='.')
     ax[0].set_xlabel("radius sample")
@@ -78,7 +84,8 @@ def main(argv=None):
     ax[1].set_xlabel("theta_1")
     ax[1].set_ylabel("pdf")
     ax[1].set_title("Chain:")
-    plt.show()
+    figure_name = os.path.join(figure_path, 'problem_1.png')
+    fig.savefig(fname=figure_name, dpi=300)
 
 
 if __name__ == "__main__":
