@@ -17,9 +17,8 @@ PRNGKey = jax.random.PRNGKey
 class RandomWalk():
     def __init__(
         self,
-        model_function: Callable,
         parameters: jax.typing.ArrayLike,
-        data: tuple[jax.typing.ArrayLike, jax.typing.ArrayLike],
+        data: tuple[jax.typing.ArrayLike, jax.typing.ArrayLike, jax.random.PRNGKeyArray],
         *,
         rng_key: jax.random.PRNGKey = jax.random.PRNGKey(42),
         num_observations: float = 1,
@@ -33,6 +32,16 @@ class RandomWalk():
         self.num_chain_elements = num_chain_elements
 
         # Bind Model Function:
+        def model_function(q, x, key):
+            win_percentage = jnp.where(x < q, 2/3, 1/3)
+            a = jnp.array([0, 1]).flatten()
+            p = jnp.array([1-win_percentage, win_percentage]).flatten()
+            result = jax.random.choice(
+                key,
+                a=a,
+                p=p,
+            )
+            return result
         self.model_function = model_function
         self.gradient_fn = jax.jit(jax.jacfwd(self.model_function))
 
@@ -41,21 +50,21 @@ class RandomWalk():
         self.num_parameters = self.q.shape[0]
 
         # Unpack Data:
-        self.y, self.x = data
+        self.y, self.x, self.keys = data
         self.num_samples = self.y.shape[0]
 
         # Override initial guess:
         self.custom_q0 = custom_initial_guess
 
         # Isollate functions:
-        self.sum_of_squares = lambda q, y, x: self._sum_of_squares(
-            q, y, x, self.model_function,
+        self.sum_of_squares = lambda q, y, x, keys: self._sum_of_squares(
+            q, y, x, keys, self.model_function,
         )
         self.compute_candidate = lambda q, R, rng_key: self._compute_candidate(
             q, R, rng_key, self.q.shape,
         )
-        self.compute_sensitivity_matrix = lambda q, x: self._compute_sensitivity_matrix(
-            q, x, self.model_function,
+        self.compute_sensitivity_matrix = lambda q, x, keys: self._compute_sensitivity_matrix(
+            q, x, keys, self.model_function,
         )
 
         # Compute initial values:
@@ -75,12 +84,14 @@ class RandomWalk():
                 self.q,
                 self.y,
                 self.x,
+                self.keys,
             )
             _gradient_fn = jax.jit(jax.jacfwd(self.sum_of_squares))
             gradient = _gradient_fn(
                 self.q,
                 self.y,
                 self.x,
+                self.keys,
             )
 
             # Setup OSQP program:
@@ -132,6 +143,7 @@ class RandomWalk():
             self.q0,
             self.y,
             self.x,
+            self.keys,
         )
 
         # Computer initial variance estimate:
@@ -146,6 +158,7 @@ class RandomWalk():
         sensitivity_matrix = self.compute_sensitivity_matrix(
             self.q0,
             self.x,
+            self.keys,
         )
         self.covariance = self.variance_squared * np.linalg.inv(
             sensitivity_matrix.T @ sensitivity_matrix,
@@ -167,11 +180,13 @@ class RandomWalk():
                 q_candidate,
                 self.y,
                 self.x,
+                self.keys,
             )
             ss_q = self.sum_of_squares(
                 q,
                 self.y,
                 self.x,
+                self.keys,
             )
 
             # Compute acceptance probability:
@@ -243,19 +258,19 @@ class RandomWalk():
         return q + R @ jax.random.normal(rng_key, shape)
 
     @partial(jax.jit, static_argnames=("self", "fun",))
-    def _sum_of_squares(self, q, y, x, fun):
-        def _error(q, y, x):
-            return y - fun(q, x)
+    def _sum_of_squares(self, q, y, x, keys, fun):
+        def _error(q, y, x, keys):
+            return y - fun(q, x, keys)
         residual = jax.vmap(
-            _error, in_axes=(None, 0, 0), out_axes=(0),
-        )(q, y, x)
+            _error, in_axes=(None, 0, 0, 0), out_axes=(0),
+        )(q, y, x, keys)
         return jnp.sum(residual ** 2)
 
     @partial(jax.jit, static_argnames=("self", "fun",))
-    def _compute_sensitivity_matrix(self, q, x, fun):
+    def _compute_sensitivity_matrix(self, q, x, keys, fun):
         return jax.vmap(
-            jax.jacfwd(fun), in_axes=(None, 0), out_axes=(0),
-        )(q, x)
+            jax.jacfwd(fun), in_axes=(None, 0, 0), out_axes=(0),
+        )(q, x, keys)
 
     @partial(jax.jit, static_argnames=("self",))
     def _sample_inverse_gamma_distribution(self, rng_key, alpha, beta):
@@ -267,92 +282,4 @@ class RandomWalk():
             (beta ** alpha) / (gamma_value)
         ) * (1 / x) ** (alpha + 1) * jnp.exp(-beta / x)
         return inverse_gamma_sample
-
-
-def main(argv=None):
-    def fun(q, x):
-        y = q[0] * x + q[1]
-        return y
-
-    # Generate data:
-    key = jax.random.PRNGKey(42)
-    sample_size = 1000
-    param_size = 2
-    scale = 0.1
-    x = jax.random.uniform(key, shape=(sample_size,))
-    random_q = jax.random.uniform(key, shape=(param_size,))
-    print("Actual theta:", random_q)
-    y = []
-    for i in range(x.shape[0]):
-        y.append(fun(random_q, x[i]))
-
-    _, key = jax.random.split(key)
-    y = np.asarray(y) + scale * jax.random.normal(key, shape=(sample_size,))
-
-    # Actual Function:
-    x_plot = np.linspace(0, 1, 100)
-    y_plot = []
-    for i in range(x_plot.shape[0]):
-        y_plot.append(fun(random_q, x_plot[i]))
-    y_plot = np.asarray(y_plot)
-
-    # Plot data:
-    fig, ax = plt.subplots()
-    ax.scatter(x, y)
-    ax.plot(x_plot, y_plot, color="black", linestyle='--')
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
-
-    # Number of parameters:
-    q = jnp.zeros((2,))
-
-    # Initialize Random Walk:
-    num_chain_elements = 5000
-    random_walk = RandomWalk(
-        model_function=fun,
-        parameters=q,
-        data=(y, x),
-        rng_key=key,
-        num_observations=0.1,
-        num_chain_elements=num_chain_elements,
-    )
-
-    # Test Loop:
-    data = random_walk.loop()
-    theta, ss, variance = data
-    print("Final theta:", theta[-1, :])
-
-    approximated_y = []
-    for i in range(x_plot.shape[0]):
-        approximated_y.append(fun(theta[-1, :], x_plot[i]))
-    approximated_y = np.asarray(approximated_y)
-    ax.plot(x_plot, approximated_y, color="red", linestyle='--')
-    plt.show()
-
-    burnin = num_chain_elements // 10
-    theta_1_range = (np.min(theta[burnin:, 0]), np.max(theta[burnin:, 0]))
-    theta_2_range = (np.min(theta[burnin:, 1]), np.max(theta[burnin:, 1]))
-
-    fig, ax = plt.subplots(2)
-    num_std = 1.0
-    theta_1_kernel = scipy.stats.gaussian_kde(theta[burnin:, 0])
-    theta_2_kernel = scipy.stats.gaussian_kde(theta[burnin:, 1])
-    theta_1_range = (
-        np.mean(theta[burnin:, 0]) - num_std * np.std(theta[burnin:, 0]),
-        np.mean(theta[burnin:, 0]) + num_std * np.std(theta[burnin:, 0]),
-    )
-    theta_1_range = np.linspace(*theta_1_range, 1000)
-    theta_2_range = (
-        np.mean(theta[burnin:, 1]) - num_std * np.std(theta[burnin:, 1]),
-        np.mean(theta[burnin:, 1]) + num_std * np.std(theta[burnin:, 1]),
-    )
-    theta_2_range = np.linspace(*theta_2_range, 1000)
-    theta_1_samples = theta_1_kernel.evaluate(theta_1_range)
-    theta_2_samples = theta_2_kernel.evaluate(theta_2_range)
-    ax[0].scatter(theta_1_range, theta_1_samples)
-    ax[1].scatter(theta_2_range, theta_2_samples)
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()
+    
