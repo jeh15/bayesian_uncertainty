@@ -73,12 +73,17 @@ def main(argv=None):
     theta_1_samples = theta_1_kernel.evaluate(theta_1_range)
 
     # Plot Results:
-    fig, ax = plt.subplots(2)
-    plt.subplots_adjust(hspace=0.5)
+    fig, ax = plt.subplots(4)
+    plt.subplots_adjust(hspace=1.5)
     ax[0].scatter(theta_1_range, theta_1_samples)
     ax[0].set_xlabel("theta_1")
     ax[0].set_ylabel("pdf")
     ax[0].set_title("Probability of Winning if you Stay")
+    iteration = np.arange(num_chain_elements)
+    ax[2].scatter(iteration, theta)
+    ax[2].set_xlabel("iteration")
+    ax[2].set_ylabel("theta_1")
+    ax[2].set_title("Chain Plot: Stay")
 
     # Probability Switch:
     actual_q = np.array([2/3])
@@ -127,6 +132,11 @@ def main(argv=None):
     ax[1].set_xlabel("theta_1")
     ax[1].set_ylabel("pdf")
     ax[1].set_title("Probability of Winning if you Switch")
+    iteration = np.arange(num_chain_elements)
+    ax[3].scatter(iteration, theta)
+    ax[3].set_xlabel("iteration")
+    ax[3].set_ylabel("theta_1")
+    ax[3].set_title("Chain Plot: Switch")
     figure_name = os.path.join(figure_path, 'problem_2.png')
     fig.savefig(fname=figure_name, dpi=300)
 

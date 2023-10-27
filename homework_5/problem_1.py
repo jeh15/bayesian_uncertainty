@@ -72,8 +72,8 @@ def main(argv=None):
     model_response = np.asarray(model_response)
 
     # Plot Results:
-    fig, ax = plt.subplots(2)
-    plt.subplots_adjust(hspace=0.5)
+    fig, ax = plt.subplots(3)
+    plt.subplots_adjust(hspace=1.0)
     ax[0].scatter(x, y)
     ax[0].scatter(x, model_response, marker='.')
     ax[0].set_xlabel("radius sample")
@@ -83,7 +83,12 @@ def main(argv=None):
     ax[1].scatter(theta_1_range, theta_1_samples)
     ax[1].set_xlabel("theta_1")
     ax[1].set_ylabel("pdf")
-    ax[1].set_title("Chain:")
+    ax[1].set_title("Density Plot:")
+    iteration = np.arange(num_chain_elements)
+    ax[2].scatter(iteration, theta)
+    ax[2].set_xlabel("iteration")
+    ax[2].set_ylabel("theta_1")
+    ax[2].set_title("Chain Plot:")
     figure_name = os.path.join(figure_path, 'problem_1.png')
     fig.savefig(fname=figure_name, dpi=300)
 
