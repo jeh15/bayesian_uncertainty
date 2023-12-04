@@ -31,12 +31,12 @@ def main(argv=None):
             np.prod(product_vector, axis=0),
         ])
 
-    p1 = Parameter('p1', 'U', 0, 1, [], [])
-    p2 = Parameter('p2', 'U', 0, 1, [], [])
-    p3 = Parameter('p3', 'U', 0, 1, [], [])
-    p4 = Parameter('p4', 'U', 0, 1, [], [])
-    p5 = Parameter('p5', 'U', 0, 1, [], [])
-    p6 = Parameter('p6', 'U', 0, 1, [], [])
+    p1 = Parameter('p1', 'O', 0, 1, [], [])
+    p2 = Parameter('p2', 'O', 0, 1, [], [])
+    p3 = Parameter('p3', 'O', 0, 1, [], [])
+    p4 = Parameter('p4', 'O', 0, 1, [], [])
+    p5 = Parameter('p5', 'O', 0, 1, [], [])
+    p6 = Parameter('p6', 'O', 0, 1, [], [])
 
     params = [p1, p2, p3, p4, p5, p6]
     xdata = np.array([0.0])
